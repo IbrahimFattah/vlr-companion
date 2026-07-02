@@ -27,9 +27,20 @@ Remaining: deploy the container to the real server + HTTPS
 Shipped: tap a map card → `MapScoreboardView` sheet with per-team tables
 (R, ACS, K/D/A, colored +/–, KAST, ADR, HS%, FK, FD), horizontal scroll for
 the stat tail, agents under player names. Works on live data (real API
-scoreboards) and sample data (seeded lines). Remaining nice-to-have:
-All/Attack/Defend side splits — the scraper currently exposes only
-aggregates, so this needs an upstream (vlrggapi) change first.
+scoreboards) and sample data (seeded lines).
+
+Later polish (decided):
+- **Agent portrait next to the player name** (left or right of the name,
+  like vlr.gg) instead of the text label under it — icons served from the
+  assets bucket (`{bucket}/agents/{agent}.png`), rendered in
+  `MapScoreboardView.row` and reusable in `AgentChip`.
+- **Actual map picture as the scoreboard/map-card background** — full-bleed
+  splash art from `{bucket}/maps/{map}.jpg` behind a dark scrim (keep text
+  contrast), replacing the duotone gradient once the bucket is populated.
+  Hooks already exist (`MapArt.imageURL`); this is about switching from
+  banner-strip overlay to full card/sheet-header background.
+- All/Attack/Defend side splits — the scraper currently exposes only
+  aggregates, so this needs an upstream (vlrggapi) change first.
 
 Original spec for reference:
 
