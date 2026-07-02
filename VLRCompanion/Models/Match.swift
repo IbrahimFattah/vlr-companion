@@ -10,19 +10,22 @@ enum MatchFormat: String, Codable, Hashable {
     case bo1
     case bo3
     case bo5
+    /// Real match lists don't expose the format; UI hides it when unknown.
+    case unknown
 
     var display: String {
         switch self {
         case .bo1: "Bo1"
         case .bo3: "Bo3"
         case .bo5: "Bo5"
+        case .unknown: ""
         }
     }
 
     var mapsToWin: Int {
         switch self {
         case .bo1: 1
-        case .bo3: 2
+        case .bo3, .unknown: 2
         case .bo5: 3
         }
     }

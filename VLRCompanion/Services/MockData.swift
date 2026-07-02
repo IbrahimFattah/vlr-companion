@@ -228,7 +228,7 @@ enum MockData {
                 ? 12 + Int((matchSeed >> UInt64(index * 3 + 2)) % 3)
                 : 3 + Int((matchSeed >> UInt64(index * 3 + 2)) % 9)
             let winnerScore = overtime ? loserScore + 2 : 13
-            let pickedBy = index == series - 1 ? nil : (index % 2 == 0 ? t1 : t2)
+            let pickedBy = index == series - 1 ? "DECIDER" : (index % 2 == 0 ? t1 : t2)
             return MapResult(name: names[index],
                              score1: team1Won ? winnerScore : loserScore,
                              score2: team1Won ? loserScore : winnerScore,
@@ -292,7 +292,7 @@ enum MockData {
                 for index in maps.count..<min(series, maps.count + remaining) {
                     maps.append(MapResult(name: names[index], score1: 0, score2: 0,
                                           status: .upcoming,
-                                          pickedBy: index == series - 1 ? nil : (index % 2 == 0 ? t1 : t2),
+                                          pickedBy: index == series - 1 ? "DECIDER" : (index % 2 == 0 ? t1 : t2),
                                           agents1: [], agents2: []))
                 }
             }

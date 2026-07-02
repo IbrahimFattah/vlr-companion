@@ -1,10 +1,26 @@
 # Self-hosting vlrggapi + wiring the app to it
 
-The core missing piece: swap mock data for the real
-[vlrggapi](https://github.com/axsddlr/vlrggapi) (FastAPI scraper for vlr.gg),
-running on our own server — the public instance
-(`https://vlrggapi.vercel.app`) is down per the upstream README, so
-self-hosting is the plan of record.
+**Status: implemented.** `VLRAPIService` is fully mapped and verified against a
+local Docker instance (all tabs + match detail + offline fallback). Toggle
+"Live data" in Settings → Data source (applies on relaunch). What remains from
+this doc for production: running the container on the real server + HTTPS
+reverse proxy (Part 1 below).
+
+Notes from integration against the live scraper:
+- List endpoints carry no numeric team IDs → teams are identified by
+  normalized name slugs; `teamProfile` resolves slug → numeric id via
+  `/v2/search` (cached per launch).
+- Rankings expose record/earnings but no ranking points or movement — the
+  Stats tab shows earnings in place of points on live data.
+- Scraped strings can contain raw control characters (invalid JSON) — the
+  client sanitizes bytes < 0x20 before decoding. Keep that when touching
+  the transport layer.
+- Per-map `picked_by` is unreliable; picks are rebuilt from the veto lines.
+- Per-map, per-player scoreboard data (roadmap #2) is already decoded into
+  `MapResult.players1/players2` — UI pending.
+
+The public instance (`https://vlrggapi.vercel.app`) is down per the upstream
+README, so self-hosting is the plan of record.
 
 ## Part 1 — Run the API on the server
 

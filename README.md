@@ -3,9 +3,14 @@
 A native SwiftUI iOS companion for [VLR.gg](https://www.vlr.gg) — live Valorant esports
 scores, match history, events, rankings, and a personalized tab for your favorite team.
 
-Currently running entirely on **deterministic sample data** so every screen can be
-exercised end-to-end. The data layer is a single protocol seam, ready to swap to a
-self-hosted [vlrggapi](https://github.com/axsddlr/vlrggapi) instance.
+Two data sources behind one protocol seam, switchable in Settings → Data source
+("Live data" toggle, applies on relaunch):
+
+- **Sample data** (default) — deterministic mock, every screen works offline.
+- **Live data** — a self-hosted [vlrggapi](https://github.com/axsddlr/vlrggapi)
+  instance (`VLRAPIService`, fully implemented). Setup: see `SELF_HOSTING.md`.
+  Both sources sit behind a disk cache, so the app still renders when the
+  server (or the network) is down.
 
 ## Run
 

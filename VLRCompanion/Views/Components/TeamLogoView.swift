@@ -12,10 +12,15 @@ struct TeamLogoView: View {
     var body: some View {
         Group {
             if let url = team.logoURL {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFit()
-                } placeholder: {
-                    monogram
+                // Backing plate keeps black-on-transparent crests visible in dark mode.
+                ZStack {
+                    Circle().fill(Theme.elevated)
+                    AsyncImage(url: url) { image in
+                        image.resizable().scaledToFit()
+                    } placeholder: {
+                        monogram
+                    }
+                    .padding(size * 0.12)
                 }
             } else {
                 monogram

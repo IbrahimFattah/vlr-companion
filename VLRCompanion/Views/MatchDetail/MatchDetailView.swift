@@ -6,6 +6,25 @@ struct MatchDetailView: View {
     @Environment(\.dataService) private var dataService
     @State private var detail: Loadable<MatchDetail> = .idle
 
+    /// The list row's match, upgraded with detail data (streams, VODs, exact
+    /// scores) once it loads.
+    private var currentMatch: Match {
+        guard let loaded = detail.value?.match else { return match }
+        return Match(id: loaded.id,
+                     eventName: loaded.eventName.isEmpty ? match.eventName : loaded.eventName,
+                     stage: loaded.stage.isEmpty ? match.stage : loaded.stage,
+                     team1: loaded.team1,
+                     team2: loaded.team2,
+                     score1: loaded.score1 ?? match.score1,
+                     score2: loaded.score2 ?? match.score2,
+                     status: loaded.status == .upcoming && match.status != .upcoming ? match.status : loaded.status,
+                     time: match.time,
+                     format: loaded.format == .unknown ? match.format : loaded.format,
+                     currentMap: loaded.currentMap ?? match.currentMap,
+                     streamURL: loaded.streamURL ?? match.streamURL,
+                     vodURL: loaded.vodURL ?? match.vodURL)
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -33,33 +52,37 @@ struct MatchDetailView: View {
     // MARK: - Hero
 
     private var hero: some View {
-        VStack(spacing: 14) {
-            Text("\(match.eventName) · \(match.stage) · \(match.format.display)".uppercased())
+        let shown = currentMatch
+        return VStack(spacing: 14) {
+            Text([shown.eventName, shown.stage, shown.format.display]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · ")
+                    .uppercased())
                 .font(.caption2.weight(.semibold))
                 .tracking(0.6)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             HStack(alignment: .top, spacing: 12) {
-                heroTeam(match.team1)
+                heroTeam(shown.team1)
                 scoreBlock
                     .frame(maxWidth: .infinity)
-                heroTeam(match.team2)
+                heroTeam(shown.team2)
             }
 
-            if match.status == .live {
+            if shown.status == .live {
                 HStack(spacing: 8) {
                     LiveBadge()
-                    if let map = match.currentMap {
-                        Text("Map \((match.score1 ?? 0) + (match.score2 ?? 0) + 1) · \(map)")
+                    if let map = shown.currentMap {
+                        Text("Map \((shown.score1 ?? 0) + (shown.score2 ?? 0) + 1) · \(map)")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(Theme.live)
                     }
                 }
-            } else if match.status == .upcoming {
+            } else if shown.status == .upcoming {
                 VStack(spacing: 4) {
-                    KickoffLabel(date: match.time)
-                    Text(match.time, format: .dateTime.weekday(.wide).month(.wide).day().hour().minute())
+                    KickoffLabel(date: shown.time)
+                    Text(shown.time, format: .dateTime.weekday(.wide).month(.wide).day().hour().minute())
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -72,15 +95,15 @@ struct MatchDetailView: View {
 
     private var scoreBlock: some View {
         Group {
-            if match.status == .upcoming {
+            if currentMatch.status == .upcoming {
                 Text("VS")
                     .font(.system(size: 30, weight: .black))
                     .foregroundStyle(.secondary)
             } else {
-                Text("\(match.score1 ?? 0) – \(match.score2 ?? 0)")
+                Text("\(currentMatch.score1 ?? 0) – \(currentMatch.score2 ?? 0)")
                     .font(.system(size: 40, weight: .black))
                     .monospacedDigit()
-                    .foregroundStyle(match.status == .live ? Theme.live : .primary)
+                    .foregroundStyle(currentMatch.status == .live ? Theme.live : .primary)
             }
         }
     }
@@ -100,6 +123,7 @@ struct MatchDetailView: View {
 
     @ViewBuilder
     private var watchButtons: some View {
+        let match = currentMatch
         HStack(spacing: 10) {
             if match.status == .live, let stream = match.streamURL {
                 Link(destination: stream) {
@@ -140,7 +164,7 @@ struct MatchDetailView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Maps")
                 ForEach(detail.maps) { map in
-                    MapCard(map: map, team1: match.team1, team2: match.team2)
+                    MapCard(map: map, team1: currentMatch.team1, team2: currentMatch.team2)
                 }
             }
         }
@@ -208,15 +232,7 @@ struct MapCard: View {
                 Text(map.name)
                     .font(.headline)
                 if let pickedBy = map.pickedBy {
-                    Text("\(pickedBy) PICK")
-                        .font(.caption2.weight(.bold))
-                        .tracking(0.5)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Theme.elevated, in: Capsule())
-                        .foregroundStyle(.secondary)
-                } else if map.status != .upcoming || map.pickedBy == nil {
-                    Text("DECIDER")
+                    Text(pickedBy == "DECIDER" ? "DECIDER" : "\(pickedBy) PICK")
                         .font(.caption2.weight(.bold))
                         .tracking(0.5)
                         .padding(.horizontal, 7)

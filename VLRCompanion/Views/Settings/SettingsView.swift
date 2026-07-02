@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance: Appearance = .dark
     @AppStorage("matchAlerts") private var matchAlerts = true
     @AppStorage(AppConfig.baseURLDefaultsKey) private var baseURL = ""
+    @AppStorage("useLiveData") private var useLiveData = false
     @State private var showTeamPicker = false
 
     var body: some View {
@@ -47,7 +48,9 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent("Source", value: "Sample data")
+                    Toggle("Live data (vlrggapi)", isOn: $useLiveData)
+                        .tint(Theme.win)
+                    LabeledContent("Source", value: useLiveData ? "vlrggapi" : "Sample data")
                     TextField("API base URL", text: $baseURL)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
@@ -55,7 +58,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Data source")
                 } footer: {
-                    Text("Used once the self-hosted vlrggapi instance is connected. Leave empty for the default: \(AppConfig.defaultBaseURLString)")
+                    Text("Live data needs a running vlrggapi instance and applies on next launch. Leave the URL empty for the default: \(AppConfig.defaultBaseURLString)")
                 }
 
                 Section("About") {

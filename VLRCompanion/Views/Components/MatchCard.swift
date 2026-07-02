@@ -32,7 +32,10 @@ struct MatchCard: View {
     }
 
     private var eyebrow: String {
-        "\(match.eventName) · \(match.stage) · \(match.format.display)".uppercased()
+        [match.eventName, match.stage, match.format.display]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+            .uppercased()
     }
 
     @ViewBuilder

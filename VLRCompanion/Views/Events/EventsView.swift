@@ -92,12 +92,18 @@ struct EventCard: View {
             Text(event.name)
                 .font(.headline)
                 .multilineTextAlignment(.leading)
-            HStack(spacing: 14) {
-                Label(event.dates, systemImage: "calendar")
-                Label(event.prizePool, systemImage: "trophy")
+            if !event.dates.isEmpty || !event.prizePool.isEmpty {
+                HStack(spacing: 14) {
+                    if !event.dates.isEmpty {
+                        Label(event.dates, systemImage: "calendar")
+                    }
+                    if !event.prizePool.isEmpty {
+                        Label(event.prizePool, systemImage: "trophy")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -152,8 +158,12 @@ struct EventDetailView: View {
             Text(event.name)
                 .font(.title3.weight(.bold))
             HStack(spacing: 14) {
-                Label(event.dates, systemImage: "calendar")
-                Label(event.prizePool, systemImage: "trophy")
+                if !event.dates.isEmpty {
+                    Label(event.dates, systemImage: "calendar")
+                }
+                if !event.prizePool.isEmpty {
+                    Label(event.prizePool, systemImage: "trophy")
+                }
                 Label(event.region, systemImage: "globe")
             }
             .font(.caption)

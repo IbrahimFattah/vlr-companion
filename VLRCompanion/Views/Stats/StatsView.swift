@@ -205,13 +205,24 @@ struct RankingRow: View {
                     .monospacedDigit()
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("\(ranking.points)")
-                    .font(.subheadline.weight(.black))
-                    .monospacedDigit()
-                Text("PTS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+            if let points = ranking.points {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text("\(points)")
+                        .font(.subheadline.weight(.black))
+                        .monospacedDigit()
+                    Text("PTS")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            } else if let earnings = ranking.earnings, !earnings.isEmpty {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(earnings)
+                        .font(.footnote.weight(.bold))
+                        .monospacedDigit()
+                    Text("EARNINGS")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
             }
         }
         .padding(12)

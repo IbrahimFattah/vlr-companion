@@ -3,13 +3,13 @@
 Features planned after the mock-data milestone. Ordered roughly by
 dependency: items needing a backend/account system cluster together.
 
-## 0. Real API integration (self-hosted vlrggapi)
+## 0. Real API integration (self-hosted vlrggapi) — ✅ DONE (client side)
 
-The obvious one: replace mock data with the self-hosted vlrggapi instance.
-Full plan (server setup with Docker + HTTPS, app wiring, endpoint-by-endpoint
-mapping order) lives in **[SELF_HOSTING.md](SELF_HOSTING.md)**. Everything
-else on this list assumes it's done — it unlocks real team IDs/logos (#1)
-and the per-map stats payload (#2).
+`VLRAPIService` implemented and verified against a local Docker instance;
+"Live data" toggle in Settings. Real logos already flow through (#1 partly
+done) and per-map player stats are decoded and waiting for UI (#2).
+Remaining: deploy the container to the real server + HTTPS
+(**[SELF_HOSTING.md](SELF_HOSTING.md)** Part 1).
 
 ## 1. Real team logos
 

@@ -1,12 +1,15 @@
 import SwiftUI
 
-/// The single place the app's data source is chosen.
-///
-/// INTEGRATION POINT: once the self-hosted vlrggapi instance is up, replace
-/// the default with `CachingDataService(wrapping: VLRAPIService())`. Nothing
-/// else changes — every view reads `@Environment(\.dataService)`.
+/// The single place the app's data source is chosen. Controlled by the
+/// "Live data" toggle in Settings (UserDefaults "useLiveData", applied on
+/// next launch); both sources sit behind the offline cache decorator.
 private struct DataServiceKey: EnvironmentKey {
-    static let defaultValue: any VLRDataService = CachingDataService(wrapping: MockVLRDataService())
+    static let defaultValue: any VLRDataService = {
+        if UserDefaults.standard.bool(forKey: "useLiveData") {
+            return CachingDataService(wrapping: VLRAPIService())
+        }
+        return CachingDataService(wrapping: MockVLRDataService())
+    }()
 }
 
 extension EnvironmentValues {

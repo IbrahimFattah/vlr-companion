@@ -246,7 +246,9 @@ struct NextMatchHero: View {
             }
             .frame(maxWidth: .infinity)
 
-            Text("\(match.eventName) · \(match.stage) · \(match.format.display)")
+            Text([match.eventName, match.stage, match.format.display]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
