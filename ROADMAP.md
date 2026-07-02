@@ -3,6 +3,14 @@
 Features planned after the mock-data milestone. Ordered roughly by
 dependency: items needing a backend/account system cluster together.
 
+## 0. Real API integration (self-hosted vlrggapi)
+
+The obvious one: replace mock data with the self-hosted vlrggapi instance.
+Full plan (server setup with Docker + HTTPS, app wiring, endpoint-by-endpoint
+mapping order) lives in **[SELF_HOSTING.md](SELF_HOSTING.md)**. Everything
+else on this list assumes it's done — it unlocks real team IDs/logos (#1)
+and the per-map stats payload (#2).
+
 ## 1. Real team logos
 
 Replace monogram circles with actual team crests.
@@ -111,6 +119,7 @@ Community discussion per match and per event.
 
 | Phase | Items | Why |
 |---|---|---|
+| 0 | #0 API integration | Everything real depends on it — see SELF_HOSTING.md |
 | A | #1 logos, #6 map art, #2 map scoreboard | Pure client + existing API data; biggest visible win |
 | B | #5 push | Needs small backend worker, no accounts |
 | C | #3 accounts, #4 points | Shared auth/profile foundation |
