@@ -1,0 +1,33 @@
+services:
+  vlrggapi:
+    # The scraper API the app already uses. Build from your sibling clone, or
+    # swap `build` for `image: vlrggapi` if you built it separately.
+    build: ../../vlrggapi
+    container_name: vlrggapi
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+
+  push-server:
+    build: .
+    container_name: vlr-push
+    restart: unless-stopped
+    depends_on:
+      - vlrggapi
+    environment:
+      VLRGGAPI_URL: "http://vlrggapi:3001"
+      APNS_KEY_ID: "${APNS_KEY_ID}"
+      APNS_TEAM_ID: "${APNS_TEAM_ID}"
+      APNS_KEY_PATH: "/secrets/AuthKey.p8"
+      APNS_BUNDLE_ID: "com.vlrcompanion.app"
+      APNS_DEFAULT_ENV: "${APNS_DEFAULT_ENV:-sandbox}"
+      DB_PATH: "/data/push.db"
+      POLL_INTERVAL: "30"
+    volumes:
+      - push-data:/data
+      - ./secrets:/secrets:ro
+    ports:
+      - "8000:8000"
+
+volumes:
+  push-data:

@@ -127,3 +127,30 @@ Everything below already has hooks in the codebase; no UI changes needed.
 My Team) → `teamProfile` → `events`/`eventMatches` → `news` → `playerStats`.
 Ship each behind the same protocol; mock stays available for UI work by
 flipping `DataServiceKey` back.
+
+## Part 3 — Push notifications worker
+
+Background match alerts (roadmap #5) run as a **second service**, `push-server/`,
+alongside vlrggapi. It polls the same API and sends APNs, so it needs a paid
+Apple Developer account (APNs auth key + Push capability on
+`com.vlrcompanion.app`). Full setup is in
+**[push-server/README.md](push-server/README.md)**; the short version:
+
+1. Apple portal: enable Push for the app id, create an APNs **Auth Key** (.p8),
+   note the **Key ID** and **Team ID**.
+2. On the server:
+   ```bash
+   cd push-server
+   cp .env.example .env            # APNS_KEY_ID / APNS_TEAM_ID
+   mkdir -p secrets && cp AuthKey.p8 secrets/
+   docker compose up --build       # runs vlrggapi + push-server together
+   ```
+3. Reverse-proxy `:8000` under HTTPS (same Caddy/nginx as Part 1), e.g.
+   `push.yourdomain.com`.
+4. In the app: **Settings → Data source → Push server URL** =
+   `https://push.yourdomain.com`. The app registers its token + follows on
+   launch and whenever they change.
+5. Only real devices get an APNs token (the Simulator can't register). Test the
+   in-app tap handling with `xcrun simctl push booted com.vlrcompanion.app
+   payload.apns` (sample payload in the push-server README), and test APNs
+   credentials with the worker's `POST /test-push`.

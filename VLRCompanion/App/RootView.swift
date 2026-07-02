@@ -12,5 +12,14 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: favorites.onboardingComplete)
+        // Keep the push worker's picture of who this device follows in sync,
+        // so match alerts target the right teams.
+        .task {
+            await NotificationManager.shared.refreshAuthorizationStatus()
+            NotificationManager.shared.updateFollowedTeams(Array(favorites.followedTeamIDs))
+        }
+        .onChange(of: favorites.followedTeamIDs) { _, ids in
+            NotificationManager.shared.updateFollowedTeams(Array(ids))
+        }
     }
 }

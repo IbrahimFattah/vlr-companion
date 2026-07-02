@@ -5,6 +5,7 @@ enum AppTab: Hashable {
 }
 
 struct MainTabView: View {
+    @Environment(PushRouter.self) private var pushRouter
     @State private var selection: AppTab = .home
 
     init() {
@@ -45,6 +46,11 @@ struct MainTabView: View {
             StatsView()
                 .tabItem { Label("Stats", systemImage: "chart.bar.fill") }
                 .tag(AppTab.stats)
+        }
+        // A tapped push routes through Home's navigation stack, so bring Home
+        // forward before it consumes the pending match.
+        .onChange(of: pushRouter.pendingMatch) { _, match in
+            if match != nil { selection = .home }
         }
     }
 }

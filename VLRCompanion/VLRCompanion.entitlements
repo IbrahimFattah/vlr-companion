@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  APNs environment. `development` for debug builds / TestFlight sandbox;
+	  Xcode automatically maps this to `production` for App Store distribution.
+	  Only takes effect on a real device with a provisioning profile that has
+	  the Push Notifications capability enabled. Simulator `simctl push`
+	  testing does not require this entitlement.
+	-->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

@@ -84,7 +84,7 @@ struct SecondaryTeamsView: View {
     private func finish(with secondaries: [Team]) {
         favorites.favoriteTeam = favorite
         favorites.secondaryTeams = secondaries
-        NotificationManager.requestPermission()
+        Task { await NotificationManager.shared.enableNotifications() }
         favorites.onboardingComplete = true
     }
 

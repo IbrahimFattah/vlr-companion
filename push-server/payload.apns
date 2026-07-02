@@ -1,0 +1,18 @@
+{
+  "Simulator Target Bundle": "com.vlrcompanion.app",
+  "aps": {
+    "alert": {
+      "title": "Fnatic vs Team Heretics is live",
+      "body": "VCT EMEA · Playoffs"
+    },
+    "sound": "default",
+    "category": "MATCH_ALERT"
+  },
+  "match": {
+    "id": "12345",
+    "team1": "Fnatic", "tag1": "FNC",
+    "team2": "Team Heretics", "tag2": "TH",
+    "event": "VCT EMEA", "stage": "Playoffs",
+    "status": "live"
+  }
+}

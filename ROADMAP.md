@@ -90,20 +90,44 @@ Earn points, spend on cosmetic app customization.
   possible for v1 but invites resets/abuse).
 - Keep it cosmetic-only — no pay-to-unlock of data features.
 
-## 5. Push notifications for followed matches
+## 5. Push notifications for followed matches — ✅ built, pending Apple account + deploy
 
-Real background alerts (current build only fires local notifications while
-the app is open — integration point documented in `NotificationManager`).
+Real background alerts. Both halves are built; what's left is operational
+(a paid Apple Developer account + running the worker on the server).
 
-- Backend worker polls the self-hosted vlrggapi for followed teams' matches;
-  sends APNs on: match starting soon, match live, match finished (+ score,
-  optionally spoiler-free mode).
-- "Important matches" beyond follows: playoffs/finals of major events as an
-  opt-in topic subscription.
-- App side: register device token, per-alert-type toggles in Settings
-  (extend the existing `matchAlerts` toggle into a group).
-- Keep local in-session haptic/alert path as-is; identifiers already use
-  `live-{match_id}` so server payloads can dedupe against it.
+**App side (done, verified in Simulator):**
+- `AppDelegate` (via `UIApplicationDelegateAdaptor`) captures the APNs token,
+  presents alerts in the foreground, and routes taps.
+- Tapping an alert deep-links to the match: the payload's thin `match` object
+  → `Match.fromPushPayload` → `PushRouter` → Home pushes the detail screen
+  (verified headlessly with the `-vlrPushMatch <id>` debug hook).
+- `NotificationManager` (now a shared `@Observable`): requests authorization,
+  registers categories + remote, and POSTs token + followed teams + per-type
+  prefs to the push worker; keeps the in-session haptic/local path.
+- Settings: the single toggle became a Notifications group — Starting soon /
+  Goes live / Final score / Major event finals — plus a Push server URL field.
+- `VLRCompanion.entitlements` adds `aps-environment` (real-device only; the
+  signing-free simulator build ignores it).
+
+**Server side (done — `push-server/`):**
+- FastAPI worker: `/register`, `/unregister`, `/health`, `/test-push`.
+- Poller diffs vlrggapi live/upcoming/results every 30s and sends APNs on
+  transitions: starting-soon (15-min lead), live, finished (+score), plus a
+  major-finals topic for un-followed teams. Cold-start-safe (first sight of a
+  match records state silently) and idempotent across restarts (sent ledger).
+- Token-based APNs (.p8 / JWT ES256) over HTTP/2; SQLite store.
+- `identity.slug_id` is a byte-for-byte mirror of the app's team slug, so
+  follows target the right devices (only lines up on **live data**, not mock).
+- Verified against the local vlrggapi: parsed real feeds (3 live / 33 upcoming
+  / 50 results), correct recipient selection, silent cold start, `finished`
+  payload `"Fnatic beat Paper Rex 3–1"`.
+
+**Remaining (operational):**
+- Apple: enable Push capability for `com.vlrcompanion.app`, make an APNs auth
+  key, build to a real device for a token.
+- Deploy `push-server` behind HTTPS next to vlrggapi; paste its URL in Settings.
+- Optional later: spoiler-free mode, silent content-available refresh pushes
+  (needs `UIBackgroundModes` = remote-notification, deferred).
 
 ## 6. Map artwork on map cards — ✅ DONE (gradient identity; bucket art hooks in)
 
@@ -133,6 +157,6 @@ Community discussion per match and per event.
 |---|---|---|
 | 0 | #0 API integration | ✅ done (client side) |
 | A | #1 logos, #6 map art, #2 map scoreboard | ✅ done — remaining: populate assets bucket |
-| B | #5 push | Needs small backend worker, no accounts |
+| B | #5 push | ✅ built (app + `push-server/`) — remaining: Apple account + deploy |
 | C | #3 accounts, #4 points | Shared auth/profile foundation |
 | D | #7 forums | Depends on accounts + moderation tooling |

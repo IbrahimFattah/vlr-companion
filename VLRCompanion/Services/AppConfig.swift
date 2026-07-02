@@ -30,4 +30,18 @@ enum AppConfig {
         guard let stored, !stored.isEmpty else { return nil }
         return URL(string: stored)
     }
+
+    static let pushBackendURLDefaultsKey = "pushBackendURL"
+
+    /// Base URL of our own push worker (see `push-server/`), which stores
+    /// device tokens + followed teams and sends APNs when matches change
+    /// state. Separate service from vlrggapi. Unset → the app skips remote
+    /// registration and only fires in-session local alerts (and whatever
+    /// `simctl push` delivers during testing).
+    static var pushBackendURL: URL? {
+        let stored = UserDefaults.standard.string(forKey: pushBackendURLDefaultsKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let stored, !stored.isEmpty else { return nil }
+        return URL(string: stored)
+    }
 }

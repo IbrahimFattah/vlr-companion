@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.dataService) private var dataService
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(PushRouter.self) private var pushRouter
 
     @State private var live: Loadable<[Match]> = .idle
     @State private var upcoming: Loadable<[Match]> = .idle
@@ -42,7 +43,17 @@ struct HomeView: View {
             .navigationDestination(for: Match.self) { MatchDetailView(match: $0) }
             .refreshable { await refresh() }
             .task { await autoRefresh() }
+            .onAppear { consumePendingRoute() }
+            .onChange(of: pushRouter.pendingMatch) { _, _ in consumePendingRoute() }
         }
+    }
+
+    /// Pushes the match a tapped notification wants to open, then clears it so
+    /// it doesn't re-navigate on the next state change.
+    private func consumePendingRoute() {
+        guard let match = pushRouter.pendingMatch else { return }
+        path.append(match)
+        pushRouter.pendingMatch = nil
     }
 
     // MARK: - Sections
@@ -150,13 +161,25 @@ struct HomeView: View {
     }
 
     #if DEBUG
-    /// UI-testing hook: `-vlrOpenMatch <match_id>` pushes that match's detail
-    /// screen after the first load.
+    /// UI-testing hooks after the first load:
+    /// - `-vlrOpenMatch <id>` pushes that match's detail directly.
+    /// - `-vlrPushMatch <id>` simulates tapping a push for that match: it builds
+    ///   the real APNs payload, runs it through `Match.fromPushPayload`, and
+    ///   routes via `PushRouter` — exercising the whole notification-tap path.
     private func openMatchFromLaunchArguments() {
-        guard let id = UserDefaults.standard.string(forKey: "vlrOpenMatch") else { return }
         let pools = [live.value, upcoming.value, results.value]
-        if let match = pools.compactMap({ $0?.first { $0.id == id } }).first {
+        if let id = UserDefaults.standard.string(forKey: "vlrOpenMatch"),
+           let match = pools.compactMap({ $0?.first { $0.id == id } }).first {
             path.append(match)
+        }
+        if let id = UserDefaults.standard.string(forKey: "vlrPushMatch"),
+           let match = pools.compactMap({ $0?.first { $0.id == id } }).first {
+            pushRouter.handle(userInfo: ["match": [
+                "id": match.id,
+                "team1": match.team1.name, "tag1": match.team1.tag, "color1": match.team1.colorHex,
+                "team2": match.team2.name, "tag2": match.team2.tag, "color2": match.team2.colorHex,
+                "event": match.eventName, "stage": match.stage, "status": match.status.rawValue,
+            ]])
         }
     }
     #endif
@@ -200,7 +223,7 @@ struct HomeView: View {
         for match in matches where !known.contains(match.id) {
             if followed.contains(match.team1.id) || followed.contains(match.team2.id) {
                 Haptics.liveAlert()
-                NotificationManager.notifyMatchLive(match)
+                NotificationManager.shared.notifyMatchLive(match)
             }
         }
     }
