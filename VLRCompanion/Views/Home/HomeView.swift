@@ -41,6 +41,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .navigationDestination(for: Match.self) { MatchDetailView(match: $0) }
+            .navigationDestination(for: DiscussionRoute.self) { DiscussionScreen(route: $0) }
             .refreshable { await refresh() }
             .task { await autoRefresh() }
             .onAppear { consumePendingRoute() }
@@ -171,6 +172,9 @@ struct HomeView: View {
         if let id = UserDefaults.standard.string(forKey: "vlrOpenMatch"),
            let match = pools.compactMap({ $0?.first { $0.id == id } }).first {
             path.append(match)
+        }
+        if let ref = UserDefaults.standard.string(forKey: "vlrOpenDiscussion") {
+            path.append(DiscussionRoute(scope: "match", ref: ref, title: "Match chat"))
         }
         if let id = UserDefaults.standard.string(forKey: "vlrPushMatch"),
            let match = pools.compactMap({ $0?.first { $0.id == id } }).first {

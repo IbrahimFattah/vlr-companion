@@ -40,6 +40,8 @@ struct MatchDetailView: View {
                 case .loaded(let detail):
                     loadedContent(detail)
                 }
+
+                DiscussionView(scope: "match", ref: match.id)
             }
             .padding(16)
         }

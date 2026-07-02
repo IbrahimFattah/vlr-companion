@@ -31,6 +31,18 @@ enum AppConfig {
         return URL(string: stored)
     }
 
+    static let accountsBaseURLDefaultsKey = "accountsBaseURL"
+
+    /// Base URL of the accounts + forums service (see `api-server/`). Unset →
+    /// sign-in and discussion are unavailable (the app stays fully usable for
+    /// scores/stats; account features are additive).
+    static var accountsBaseURL: URL? {
+        let stored = UserDefaults.standard.string(forKey: accountsBaseURLDefaultsKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let stored, !stored.isEmpty else { return nil }
+        return URL(string: stored)
+    }
+
     static let pushBackendURLDefaultsKey = "pushBackendURL"
 
     /// Base URL of our own push worker (see `push-server/`), which stores

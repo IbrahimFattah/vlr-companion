@@ -5,8 +5,13 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(FavoritesStore.self) private var favorites
     @Environment(NotificationManager.self) private var notifications
+    @Environment(AccountStore.self) private var account
 
     @AppStorage("appearance") private var appearance: Appearance = .dark
+    @AppStorage(AppConfig.accountsBaseURLDefaultsKey) private var accountsURL = ""
+    @State private var showSignIn = false
+    @State private var showProfileEdit = false
+    @State private var showDeleteConfirm = false
     @AppStorage(NotificationManager.Key.live) private var alertLive = true
     @AppStorage(NotificationManager.Key.startingSoon) private var alertStartingSoon = true
     @AppStorage(NotificationManager.Key.finished) private var alertFinished = false
@@ -27,6 +32,8 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                accountSection
 
                 Section("My team") {
                     if let team = favorites.favoriteTeam {
@@ -97,10 +104,14 @@ struct SettingsView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .onChange(of: pushURL) { notifications.preferencesChanged() }
+                    TextField("API server URL (accounts, optional)", text: $accountsURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 } header: {
                     Text("Data source")
                 } footer: {
-                    Text("Live data needs a running vlrggapi instance and applies on next launch. Leave the API URL empty for the default: \(AppConfig.defaultBaseURLString). The assets bucket serves self-hosted team crests (logos/) and map art (maps/). The push server (push-server/) sends background match alerts.")
+                    Text("Live data needs a running vlrggapi instance and applies on next launch. Leave the API URL empty for the default: \(AppConfig.defaultBaseURLString). The assets bucket serves self-hosted team crests (logos/) and map art (maps/). The push server (push-server/) sends background match alerts; the API server (api-server/) powers accounts and discussion.")
                 }
 
                 Section("About") {
@@ -116,6 +127,48 @@ struct SettingsView: View {
                 }
             }
             .sheet(isPresented: $showTeamPicker) { TeamPickerSheet() }
+            .sheet(isPresented: $showSignIn) { SignInView() }
+            .sheet(isPresented: $showProfileEdit) {
+                if let account = account.account { ProfileEditView(account: account) }
+            }
+            .confirmationDialog("Delete account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+                Button("Delete account", role: .destructive) {
+                    Task { try? await account.deleteAccount() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently removes your profile, posts, and synced favorites. This can't be undone.")
+            }
+        }
+    }
+
+    // MARK: - Account
+
+    @ViewBuilder
+    private var accountSection: some View {
+        Section("Account") {
+            if !account.isAvailable {
+                Text("Set an API server URL below to enable accounts and discussion.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else if let profile = account.account {
+                HStack(spacing: 12) {
+                    AccountAvatar(emoji: profile.avatarEmoji, colorHex: profile.avatarColor, size: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(profile.username).fontWeight(.semibold)
+                        Text("Signed in").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Button("Edit profile") { showProfileEdit = true }
+                Button("Sign out") { account.signOut() }
+                Button("Delete account", role: .destructive) { showDeleteConfirm = true }
+            } else {
+                Button {
+                    showSignIn = true
+                } label: {
+                    Label("Sign in", systemImage: "person.crop.circle")
+                }
+            }
         }
     }
 }

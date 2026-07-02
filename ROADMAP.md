@@ -65,17 +65,24 @@ Original spec for reference:
   in `MatchDetailView`. Mock service should generate seeded player lines
   first so the screen is testable before API wiring.
 
-## 3. Account settings
+## 3. Account settings — ✅ built (dev auth); Sign in with Apple pending Apple account
 
-User profile and cross-device sync.
+User profile and cross-device sync. Backend + app UI done; the only gap is the
+real Apple auth path (portal-gated), which is stubbed and drops in by config.
 
-- Sign in with Apple first (native, no password UX), room for email later.
-- Profile: username, avatar, favorite/secondary teams synced server-side —
-  `FavoritesStore` becomes the local cache of a remote profile.
-- New Settings section: account row, sign in/out, delete account (App Store
-  requirement when accounts exist).
-- Needs the first real backend piece (auth + small profile store). Design it
-  together with #4 and #7, which need the same foundation.
+**Backend (`api-server/`):** users, sessions (bearer tokens), profile (username
++ avatar emoji/color), favorite-team sync, delete-account (cascade). Dev
+username login now; `/auth/apple` returns 501 until `APPLE_CLIENT_ID` is set
+(verification skeleton in place).
+
+**App:** `AccountStore` (@Observable, token in Keychain) + `AccountService`;
+Settings → Account (sign in / edit profile / sign out / delete account);
+`SignInView` with avatar picker and a disabled "Sign in with Apple — soon"
+button. Favorites mirror to the server on change; `FavoritesStore` stays the
+local cache. Verified in Simulator against a local `api-server`.
+
+Remaining: enable Sign in with Apple (capability + `APPLE_CLIENT_ID`), turn off
+dev auth (`ALLOW_DEV_AUTH=0`) for production.
 
 ## 4. Points & customization economy — ⏸ deferred (revisit after accounts + forums)
 
@@ -138,16 +145,23 @@ splash art from `{bucket}/maps/{map}.jpg` (`MapArt.imageURL`).
 Remaining nice-to-have: agent icons in `AgentChip` (host in the bucket too:
 `{bucket}/agents/{agent}.png`).
 
-## 7. Forums / discussion
+## 7. Forums / discussion — ✅ built (match threads); event/general reuse ready
 
-Community discussion per match and per event.
+Community discussion per match (and reusable for event / general boards).
 
-- Structure: match threads (auto-created), event threads, general board.
-- Post/reply, upvote, report; user identity + badges come from #3/#4.
-- Moderation is the real cost: rate limits, block/report flows, and App
-  Store UGC requirements (content flagging, user blocking) are mandatory.
-- New tab or a section inside Match/Event detail ("Discussion") — start with
-  match-thread-only inside `MatchDetailView` to avoid a 6th tab.
+**Backend (`api-server/`):** `match|event|general` threads, posts + one-level
+replies, upvote toggle, pagination cursor. UGC compliance: report flow with
+auto-hide at a report threshold, user blocking (hides their posts), author
+soft-delete, admin moderation (`X-Admin-Token`), per-user post rate limit.
+
+**App:** `DiscussionView` (inline in `MatchDetailView` + standalone
+`DiscussionScreen`), `PostRow` with avatar/upvote/reply and a report/block/
+delete menu, composer that prompts sign-in, "Load more" paging. Verified in
+Simulator (post, reply, upvote, nested thread) against a local `api-server`.
+
+Remaining: drop `DiscussionView(scope:"event",…)` into `EventDetailView`;
+optional general-board tab/section; show a first-post terms gate + moderator
+contact for App Store review; wire real auth (#3).
 
 ## 8. Incremental match loading (perf) — later
 
@@ -177,7 +191,7 @@ Right now each match list (`MatchesView`, Home sections) fetches and renders the
 | 0 | #0 API integration | ✅ done (client side) |
 | A | #1 logos, #6 map art, #2 map scoreboard | ✅ done — remaining: populate assets bucket |
 | B | #5 push | ✅ built (app + `push-server/`) — remaining: Apple account + deploy |
-| C | #3 accounts | Auth + profile/favorites sync backend |
-| D | #7 forums | Depends on accounts + moderation tooling |
+| C | #3 accounts | ✅ built (`api-server/` + app) — remaining: Sign in with Apple |
+| D | #7 forums | ✅ built (match threads) — remaining: event/general + terms gate |
 | — | #4 points | ⏸ deferred (user choice) — revisit after C+D |
 | — | #8 incremental match loading | Perf polish, any time |

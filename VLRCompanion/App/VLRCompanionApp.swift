@@ -23,6 +23,7 @@ extension EnvironmentValues {
 struct VLRCompanionApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var favorites = FavoritesStore()
+    @State private var account = AccountStore()
     @State private var pushRouter = PushRouter.shared
     @State private var notifications = NotificationManager.shared
     @AppStorage("appearance") private var appearance: Appearance = .dark
@@ -37,6 +38,7 @@ struct VLRCompanionApp: App {
         WindowGroup {
             RootView()
                 .environment(favorites)
+                .environment(account)
                 .environment(pushRouter)
                 .environment(notifications)
                 .preferredColorScheme(appearance.colorScheme)

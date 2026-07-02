@@ -154,3 +154,23 @@ Apple Developer account (APNs auth key + Push capability on
    in-app tap handling with `xcrun simctl push booted com.vlrcompanion.app
    payload.apns` (sample payload in the push-server README), and test APNs
    credentials with the worker's `POST /test-push`.
+
+## Part 4 — Accounts + forums API
+
+Profiles, favorite sync, and discussion (roadmap #3 + #7) run as a **third
+service**, `api-server/`. Unlike push, it needs no Apple account to run — dev
+username login works today; Sign in with Apple is a later config flip. Full
+docs: **[api-server/README.md](api-server/README.md)**.
+
+```bash
+cd api-server
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+DB_PATH=./data/api.db ADMIN_TOKEN=$(openssl rand -hex 24) \
+  ./.venv/bin/uvicorn app.main:app --port 8080
+# or: docker build -t vlr-api . && docker run -p 8080:8080 -v $PWD/data:/data vlr-api
+```
+
+Reverse-proxy `:8080` under HTTPS (e.g. `api.yourdomain.com`) and set it in the
+app: **Settings → Data source → API server URL**. Then Settings → Account →
+Sign in. For production, set `APPLE_CLIENT_ID` (enables Sign in with Apple) and
+`ALLOW_DEV_AUTH=0`.
