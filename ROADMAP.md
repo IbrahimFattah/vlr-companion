@@ -77,7 +77,7 @@ User profile and cross-device sync.
 - Needs the first real backend piece (auth + small profile store). Design it
   together with #4 and #7, which need the same foundation.
 
-## 4. Points & customization economy
+## 4. Points & customization economy — ⏸ deferred (revisit after accounts + forums)
 
 Earn points, spend on cosmetic app customization.
 
@@ -149,6 +149,25 @@ Community discussion per match and per event.
 - New tab or a section inside Match/Event detail ("Discussion") — start with
   match-thread-only inside `MatchDetailView` to avoid a 6th tab.
 
+## 8. Incremental match loading (perf) — later
+
+Right now each match list (`MatchesView`, Home sections) fetches and renders the
+**whole** result set every load — the live-data feeds are large (50+ results,
+30+ upcoming). It should show a first page and load the rest as the user scrolls.
+
+- Data layer: add paging to `VLRDataService.matches(_:)` — page/offset or a
+  cursor — with a `MatchQuery` limit. vlrggapi returns the full segment list per
+  query, so the first cut can page **client-side** (slice the cached array) to
+  get instant UI wins with no API change; a real server-side limit is a later
+  upstream ask.
+- UI: render the first ~15, append on scroll via `.onAppear` of the last row
+  (or `List` + `.task`), with a footer skeleton while the next page loads.
+  Keep `.refreshable` resetting to page 1.
+- Applies to Matches (all three segments), Home "recent results", event match
+  lists, and team match history.
+- Caching: `CachingDataService` still stores the full payload; paging is a
+  presentation concern over the cached array, so offline still works.
+
 ---
 
 ## Suggested order
@@ -158,5 +177,7 @@ Community discussion per match and per event.
 | 0 | #0 API integration | ✅ done (client side) |
 | A | #1 logos, #6 map art, #2 map scoreboard | ✅ done — remaining: populate assets bucket |
 | B | #5 push | ✅ built (app + `push-server/`) — remaining: Apple account + deploy |
-| C | #3 accounts, #4 points | Shared auth/profile foundation |
+| C | #3 accounts | Auth + profile/favorites sync backend |
 | D | #7 forums | Depends on accounts + moderation tooling |
+| — | #4 points | ⏸ deferred (user choice) — revisit after C+D |
+| — | #8 incremental match loading | Perf polish, any time |
