@@ -9,9 +9,21 @@ struct TeamLogoView: View {
 
     private var color: Color { Color(hex: team.colorHex) }
 
+    /// Bucket-hosted crest takes priority (our own CDN, fast + stable);
+    /// falls back to the API-provided URL. Bucket layout: logos/{slug}.png.
+    private var resolvedLogoURL: URL? {
+        if let base = AppConfig.assetsBaseURL {
+            let slug = team.id
+                .replacingOccurrences(of: "name:", with: "")
+                .replacingOccurrences(of: " ", with: "-")
+            return base.appendingPathComponent("logos/\(slug).png")
+        }
+        return team.logoURL
+    }
+
     var body: some View {
         Group {
-            if let url = team.logoURL {
+            if let url = resolvedLogoURL {
                 // Backing plate keeps black-on-transparent crests visible in dark mode.
                 ZStack {
                     Circle().fill(Theme.elevated)

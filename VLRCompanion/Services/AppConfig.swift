@@ -15,4 +15,19 @@ enum AppConfig {
         }
         return URL(string: defaultBaseURLString)!
     }
+
+    static let assetsBaseURLDefaultsKey = "assetsBaseURL"
+
+    /// Optional CDN/bucket for static assets we host ourselves — faster and
+    /// more stable than hotlinking vlr's image CDN. Layout expected:
+    ///   {bucket}/logos/{team-slug}.png   (team crests)
+    ///   {bucket}/maps/{map-name}.jpg     (map splash art, lowercase)
+    /// Unset → team crests use the API-provided URL and map cards render
+    /// their built-in gradient art.
+    static var assetsBaseURL: URL? {
+        let stored = UserDefaults.standard.string(forKey: assetsBaseURLDefaultsKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let stored, !stored.isEmpty else { return nil }
+        return URL(string: stored)
+    }
 }

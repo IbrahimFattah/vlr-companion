@@ -24,6 +24,12 @@ struct VLRCompanionApp: App {
     @State private var favorites = FavoritesStore()
     @AppStorage("appearance") private var appearance: Appearance = .dark
 
+    init() {
+        // Roomy shared cache so AsyncImage (team crests, map art) hits disk
+        // instead of the network on every scroll.
+        URLCache.shared = URLCache(memoryCapacity: 32 << 20, diskCapacity: 256 << 20)
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

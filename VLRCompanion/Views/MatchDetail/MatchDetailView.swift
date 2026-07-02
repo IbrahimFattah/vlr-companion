@@ -5,6 +5,7 @@ struct MatchDetailView: View {
 
     @Environment(\.dataService) private var dataService
     @State private var detail: Loadable<MatchDetail> = .idle
+    @State private var selectedMap: MapResult?
 
     /// The list row's match, upgraded with detail data (streams, VODs, exact
     /// scores) once it loads.
@@ -45,6 +46,9 @@ struct MatchDetailView: View {
         .background(Theme.background)
         .navigationTitle("\(match.team1.tag) vs \(match.team2.tag)")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $selectedMap) { map in
+            MapScoreboardView(map: map, team1: currentMatch.team1, team2: currentMatch.team2)
+        }
         .refreshable { await load(force: true) }
         .task { await load() }
     }
@@ -164,7 +168,16 @@ struct MatchDetailView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Maps")
                 ForEach(detail.maps) { map in
-                    MapCard(map: map, team1: currentMatch.team1, team2: currentMatch.team2)
+                    if map.players1.isEmpty {
+                        MapCard(map: map, team1: currentMatch.team1, team2: currentMatch.team2)
+                    } else {
+                        Button {
+                            selectedMap = map
+                        } label: {
+                            MapCard(map: map, team1: currentMatch.team1, team2: currentMatch.team2)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
@@ -213,6 +226,14 @@ struct MatchDetailView: View {
         if detail.value == nil { detail = .loading }
         do {
             detail = .loaded(try await dataService.matchDetail(id: match.id))
+            #if DEBUG
+            // UI-testing hook: `-vlrOpenScoreboard YES` opens the first map's
+            // player scoreboard once detail is in.
+            if UserDefaults.standard.bool(forKey: "vlrOpenScoreboard"),
+               let first = detail.value?.maps.first(where: { !$0.players1.isEmpty }) {
+                selectedMap = first
+            }
+            #endif
         } catch {
             if detail.value == nil { detail = .failed(error.localizedDescription) }
         }
@@ -227,30 +248,67 @@ struct MapCard: View {
     let team2: Team
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(spacing: 0) {
+            banner
+
+            if map.status != .upcoming {
+                VStack(alignment: .leading, spacing: 10) {
+                    agentsRow(tag: team1.tag, agents: map.agents1)
+                    agentsRow(tag: team2.tag, agents: map.agents2)
+
+                    if !map.players1.isEmpty {
+                        HStack(spacing: 6) {
+                            Image(systemName: "list.number")
+                            Text("Player scoreboard")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                    }
+                }
+                .padding(14)
+            }
+        }
+        .background(Theme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius, style: .continuous))
+    }
+
+    /// Duotone map-art banner; upgrades to real splash art from the asset
+    /// bucket when one is configured.
+    private var banner: some View {
+        let art = MapArt.colors(for: map.name)
+        return ZStack(alignment: .leading) {
+            LinearGradient(colors: [art.0.opacity(0.55), art.1.opacity(0.4)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            if let url = MapArt.imageURL(for: map.name) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill().opacity(0.6)
+                } placeholder: {
+                    Color.clear
+                }
+            }
             HStack(spacing: 8) {
-                Text(map.name)
-                    .font(.headline)
+                Text(map.name.uppercased())
+                    .font(.headline.weight(.black))
+                    .tracking(1.5)
                 if let pickedBy = map.pickedBy {
                     Text(pickedBy == "DECIDER" ? "DECIDER" : "\(pickedBy) PICK")
                         .font(.caption2.weight(.bold))
                         .tracking(0.5)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
-                        .background(Theme.elevated, in: Capsule())
-                        .foregroundStyle(.secondary)
+                        .background(.black.opacity(0.3), in: Capsule())
+                        .foregroundStyle(.white.opacity(0.85))
                 }
                 Spacer()
                 trailing
             }
-
-            if map.status != .upcoming {
-                agentsRow(tag: team1.tag, agents: map.agents1)
-                agentsRow(tag: team2.tag, agents: map.agents2)
-            }
+            .padding(.horizontal, 14)
         }
-        .padding(14)
-        .cardBackground()
+        .frame(height: 54)
+        .clipped()
     }
 
     @ViewBuilder

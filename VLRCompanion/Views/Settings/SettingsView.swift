@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance: Appearance = .dark
     @AppStorage("matchAlerts") private var matchAlerts = true
     @AppStorage(AppConfig.baseURLDefaultsKey) private var baseURL = ""
+    @AppStorage(AppConfig.assetsBaseURLDefaultsKey) private var assetsURL = ""
     @AppStorage("useLiveData") private var useLiveData = false
     @State private var showTeamPicker = false
 
@@ -55,10 +56,14 @@ struct SettingsView: View {
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    TextField("Assets bucket URL (optional)", text: $assetsURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 } header: {
                     Text("Data source")
                 } footer: {
-                    Text("Live data needs a running vlrggapi instance and applies on next launch. Leave the URL empty for the default: \(AppConfig.defaultBaseURLString)")
+                    Text("Live data needs a running vlrggapi instance and applies on next launch. Leave the API URL empty for the default: \(AppConfig.defaultBaseURLString). The assets bucket serves self-hosted team crests (logos/) and map art (maps/).")
                 }
 
                 Section("About") {

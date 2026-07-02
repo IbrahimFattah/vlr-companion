@@ -11,22 +11,27 @@ done) and per-map player stats are decoded and waiting for UI (#2).
 Remaining: deploy the container to the real server + HTTPS
 (**[SELF_HOSTING.md](SELF_HOSTING.md)** Part 1).
 
-## 1. Real team logos
+## 1. Real team logos — ✅ client done, bucket pending
 
-Replace monogram circles with actual team crests.
+- API logo URLs flow through with backing plates for dark crests; URLCache
+  bumped (32 MB / 256 MB) so images cache to disk.
+- **Bucket plan (decided)**: no dummy/monogram fallback for known teams —
+  we mirror crests in our own bucket/CDN for fast, stable retrieval.
+  `TeamLogoView` already prefers `{bucket}/logos/{team-slug}.png` when the
+  assets bucket URL is set (Settings → Data source). Remaining: stand up the
+  bucket and upload the crest set (one-time script scraping rankings logos).
+- Monogram remains only as a loading placeholder / truly-unknown-team case.
 
-- `Team.logoURL` already exists and `TeamLogoView` already upgrades to
-  `AsyncImage` when it's set — only the data side is missing.
-- Source: vlrggapi returns logo URLs on rankings/team endpoints; populate
-  during response mapping in `VLRAPIService`.
-- Add disk/memory image caching (e.g. `URLCache` sizing or a tiny image cache)
-  so logos render offline alongside the cached JSON.
-- Watch dark backgrounds: many crests are black-on-transparent — keep the
-  team-color circle as a backing plate.
+## 2. Per-map player scoreboard (vlr.gg style) — ✅ DONE
 
-## 2. Per-map player scoreboard (vlr.gg style)
+Shipped: tap a map card → `MapScoreboardView` sheet with per-team tables
+(R, ACS, K/D/A, colored +/–, KAST, ADR, HS%, FK, FD), horizontal scroll for
+the stat tail, agents under player names. Works on live data (real API
+scoreboards) and sample data (seeded lines). Remaining nice-to-have:
+All/Attack/Defend side splits — the scraper currently exposes only
+aggregates, so this needs an upstream (vlrggapi) change first.
 
-Tapping a map card opens the full player stat table, like the website:
+Original spec for reference:
 
 | Column | Meaning |
 |---|---|
@@ -89,18 +94,14 @@ the app is open — integration point documented in `NotificationManager`).
 - Keep local in-session haptic/alert path as-is; identifiers already use
   `live-{match_id}` so server payloads can dedupe against it.
 
-## 6. Map artwork on map cards
+## 6. Map artwork on map cards — ✅ DONE (gradient identity; bucket art hooks in)
 
-Make map cards visually richer (map splash/loading-screen art around the
-map name, subtle darkened backdrop so scores stay readable).
-
-- Bundle lightweight map art (Ascent, Bind, Haven, Lotus, Sunset, Abyss,
-  Corrode…) or fetch from a CDN with caching; bundled is simpler and works
-  offline.
-- Apply to `MapCard` in match detail and the veto list; consider a thin
-  map-art strip on the live match card ("Map 2 · Ascent").
-- Also add agent icons to `AgentChip` (pairs with #2's scoreboard, which
-  needs agent icons anyway).
+Shipped: every map has a signature duotone banner (`MapArt.colors`) on map
+cards and the scoreboard header — works offline, no licensing questions.
+When the assets bucket is configured, cards automatically overlay real
+splash art from `{bucket}/maps/{map}.jpg` (`MapArt.imageURL`).
+Remaining nice-to-have: agent icons in `AgentChip` (host in the bucket too:
+`{bucket}/agents/{agent}.png`).
 
 ## 7. Forums / discussion
 
@@ -119,8 +120,8 @@ Community discussion per match and per event.
 
 | Phase | Items | Why |
 |---|---|---|
-| 0 | #0 API integration | Everything real depends on it — see SELF_HOSTING.md |
-| A | #1 logos, #6 map art, #2 map scoreboard | Pure client + existing API data; biggest visible win |
+| 0 | #0 API integration | ✅ done (client side) |
+| A | #1 logos, #6 map art, #2 map scoreboard | ✅ done — remaining: populate assets bucket |
 | B | #5 push | Needs small backend worker, no accounts |
 | C | #3 accounts, #4 points | Shared auth/profile foundation |
 | D | #7 forums | Depends on accounts + moderation tooling |

@@ -221,6 +221,32 @@ enum MockData {
             return comps[Int((matchSeed &+ UInt64(mapIndex * 2 + offset)) % UInt64(comps.count))]
         }
 
+        /// Seeded per-player scoreboard lines, matching the shape the real
+        /// API delivers so the map stats UI is testable on sample data.
+        func scoreboard(for team: Team, mapIndex: Int, comp: [String], winning: Bool) -> [MapPlayerStat] {
+            roster(for: team).enumerated().map { index, player in
+                let s = seed("\(match.id)-\(team.id)-\(mapIndex)-\(index)")
+                let kills = 10 + Int(s % 14) + (winning ? 3 : 0)
+                let deaths = max(6, 9 + Int((s >> 4) % 11) - (winning ? 2 : 0))
+                let diff = kills - deaths
+                let rating = Double(78 + Int(s % 52) + (winning ? 8 : 0)) / 100
+                return MapPlayerStat(
+                    name: player.handle,
+                    agent: comp[index % comp.count],
+                    rating: String(format: "%.2f", rating),
+                    acs: "\(145 + Int((s >> 6) % 120))",
+                    kills: "\(kills)",
+                    deaths: "\(deaths)",
+                    assists: "\(2 + Int((s >> 8) % 10))",
+                    kdDiff: diff > 0 ? "+\(diff)" : "\(diff)",
+                    kast: "\(56 + Int((s >> 10) % 28))%",
+                    adr: "\(95 + Int((s >> 5) % 80))",
+                    hsPercent: "\(14 + Int((s >> 7) % 22))%",
+                    firstKills: "\(Int(s % 8))",
+                    firstDeaths: "\(Int((s >> 3) % 6))")
+            }
+        }
+
         func completedMap(_ index: Int, team1Won: Bool) -> MapResult {
             // Regulation: first to 13. Overtime: tied 12–12, win by 2.
             let overtime = (matchSeed >> UInt64(index * 2)) % 9 == 0
@@ -229,12 +255,16 @@ enum MockData {
                 : 3 + Int((matchSeed >> UInt64(index * 3 + 2)) % 9)
             let winnerScore = overtime ? loserScore + 2 : 13
             let pickedBy = index == series - 1 ? "DECIDER" : (index % 2 == 0 ? t1 : t2)
+            let comp1 = agents(index, home: true)
+            let comp2 = agents(index, home: false)
             return MapResult(name: names[index],
                              score1: team1Won ? winnerScore : loserScore,
                              score2: team1Won ? loserScore : winnerScore,
                              status: .completed, pickedBy: pickedBy,
-                             agents1: agents(index, home: true),
-                             agents2: agents(index, home: false))
+                             agents1: comp1,
+                             agents2: comp2,
+                             players1: scoreboard(for: match.team1, mapIndex: index, comp: comp1, winning: team1Won),
+                             players2: scoreboard(for: match.team2, mapIndex: index, comp: comp2, winning: !team1Won))
         }
 
         /// Winner sequence for the played maps: loser's map wins land on the
@@ -280,13 +310,17 @@ enum MockData {
             let liveScoreA = 5 + Int(matchSeed % 8)
             let liveScoreB = max(0, liveScoreA - 1 - Int((matchSeed >> 5) % 5))
             let team1Attacking = matchSeed % 2 == 0
+            let liveComp1 = agents(played, home: true)
+            let liveComp2 = agents(played, home: false)
             maps.append(MapResult(name: match.currentMap ?? names[played],
                                   score1: team1Attacking ? liveScoreA : liveScoreB,
                                   score2: team1Attacking ? liveScoreB : liveScoreA,
                                   status: .live,
                                   pickedBy: played % 2 == 0 ? t1 : t2,
-                                  agents1: agents(played, home: true),
-                                  agents2: agents(played, home: false)))
+                                  agents1: liveComp1,
+                                  agents2: liveComp2,
+                                  players1: scoreboard(for: match.team1, mapIndex: played, comp: liveComp1, winning: team1Attacking),
+                                  players2: scoreboard(for: match.team2, mapIndex: played, comp: liveComp2, winning: !team1Attacking)))
             let remaining = series - maps.count
             if remaining > 0, (match.score1 ?? 0) + 1 < match.format.mapsToWin || (match.score2 ?? 0) + 1 < match.format.mapsToWin {
                 for index in maps.count..<min(series, maps.count + remaining) {
