@@ -30,12 +30,16 @@ struct MapScoreboardView: View {
         }
     }
 
+    /// Map splash as a full-bleed header background when the assets bucket is
+    /// set (behind a dark scrim for text contrast); the duotone gradient is the
+    /// built-in look otherwise, not a fallback state.
     private var header: some View {
         let art = MapArt.colors(for: map.name)
-        return HStack(alignment: .center) {
+        let splash = MapArt.imageURL(for: map.name)
+        return HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(map.name.uppercased())
-                    .font(.title3.weight(.black))
+                    .font(.title2.weight(.black))
                     .tracking(2)
                 if map.status == .live {
                     LiveBadge()
@@ -43,16 +47,30 @@ struct MapScoreboardView: View {
             }
             Spacer()
             Text("\(map.score1) – \(map.score2)")
-                .font(.system(size: 30, weight: .black))
+                .font(.system(size: 34, weight: .black))
                 .monospacedDigit()
-                .foregroundStyle(map.status == .live ? Theme.live : .primary)
+                .foregroundStyle(map.status == .live ? Theme.live : .white)
         }
+        .foregroundStyle(splash == nil ? Color.primary : Color.white)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: splash == nil ? nil : 120, alignment: .bottomLeading)
         .padding(16)
-        .background(
-            LinearGradient(colors: [art.0.opacity(0.45), art.1.opacity(0.3)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: Theme.cardCornerRadius, style: .continuous)
-        )
+        .background {
+            ZStack {
+                LinearGradient(colors: [art.0.opacity(0.45), art.1.opacity(0.3)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                if let splash {
+                    AsyncImage(url: splash) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Color.clear
+                    }
+                    LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.7)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cardCornerRadius, style: .continuous))
     }
 
     private func teamSection(_ team: Team, players: [MapPlayerStat], score: Int) -> some View {
@@ -122,15 +140,23 @@ struct MapScoreboardView: View {
     }
 
     private func row(_ player: MapPlayerStat) -> some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(player.name)
-                    .font(.caption.weight(.bold))
-                    .lineLimit(1)
-                Text(player.agent)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+        let hasPortrait = AgentArt.imageURL(for: player.agent) != nil
+        return HStack(spacing: 0) {
+            HStack(spacing: 7) {
+                AgentPortrait(agent: player.agent, size: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(player.name)
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                    // With a portrait the agent reads from the icon; without a
+                    // bucket, keep the text label so the agent is still shown.
+                    if !hasPortrait {
+                        Text(player.agent)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
             }
             .frame(width: 126, alignment: .leading)
 

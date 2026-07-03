@@ -28,8 +28,25 @@ struct MatchesView: View {
 
     @State private var segment: Segment = .live
     @State private var matchStore: [MatchQuery: Loadable<[Match]>] = [:]
+
+    init() {
+        #if DEBUG
+        // UI-testing hook: `-vlrMatchesSegment live|upcoming|results|events`.
+        if let raw = UserDefaults.standard.string(forKey: "vlrMatchesSegment") {
+            switch raw {
+            case "upcoming": _segment = State(initialValue: .upcoming)
+            case "results": _segment = State(initialValue: .results)
+            case "events": _segment = State(initialValue: .events)
+            default: break
+            }
+        }
+        #endif
+    }
+
     @State private var eventStatus: EventStatus = .ongoing
     @State private var eventStore: [EventStatus: Loadable<[VLREvent]>] = [:]
+    /// Rows shown in the current segment; grows as the footer scrolls in.
+    @State private var visible = Paging.matchPageSize
 
     var body: some View {
         NavigationStack {
@@ -44,9 +61,10 @@ struct MatchesView: View {
             .safeAreaInset(edge: .top, spacing: 0) { filterBar }
             .navigationDestination(for: Match.self) { MatchDetailView(match: $0) }
             .navigationDestination(for: VLREvent.self) { EventDetailView(event: $0) }
-            .refreshable { await reload(force: true) }
+            .refreshable { visible = Paging.matchPageSize; await reload(force: true) }
             .task(id: segment) { await reload() }
             .task(id: eventStatus) { if segment == .events { await loadEvents(eventStatus) } }
+            .onChange(of: segment) { visible = Paging.matchPageSize }
         }
     }
 
@@ -84,17 +102,25 @@ struct MatchesView: View {
             if matches.isEmpty {
                 matchEmptyState(query)
             } else if query == .live {
-                ForEach(matches) { match in
+                ForEach(matches.prefix(visible)) { match in
                     NavigationLink(value: match) { MatchCard(match: match) }.buttonStyle(.plain)
                 }
+                pageFooter(total: matches.count)
             } else {
-                ForEach(groupedByDay(matches), id: \.title) { group in
+                ForEach(groupedByDay(Array(matches.prefix(visible))), id: \.title) { group in
                     SectionHeader(title: group.title).padding(.top, 6)
                     ForEach(group.matches) { match in
                         NavigationLink(value: match) { MatchCard(match: match) }.buttonStyle(.plain)
                     }
                 }
+                pageFooter(total: matches.count)
             }
+        }
+    }
+
+    private func pageFooter(total: Int) -> some View {
+        LoadMoreFooter(visible: visible, total: total) {
+            visible = Paging.next(visible, total: total, step: Paging.matchPageSize)
         }
     }
 

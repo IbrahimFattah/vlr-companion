@@ -64,7 +64,8 @@ two services are covered in `SELF_HOSTING.md` (Parts 1–3) and their own README
   match flips to live.
 - **Matches** — Live / Upcoming / Results / **Events** segments. The first three
   are day-grouped match lists with countdowns; Events lists Ongoing / Upcoming /
-  Completed tournaments → stage-grouped matches.
+  Completed tournaments → stage-grouped matches (each with its own discussion
+  thread). Long feeds page in — a first page renders, the rest loads on scroll.
 - **My Team** — favorite-team tab tinted with the team's brand color: next-match
   hero, upcoming, results with W/L chips, roster grid, standing. Secondary teams
   are one tap away via the chip strip.
@@ -74,7 +75,9 @@ two services are covered in `SELF_HOSTING.md` (Parts 1–3) and their own README
 - **Stats** — Team rankings (with movement indicators) and player stats
   (rating/ACS/K/D/KAST/ADR) behind one tab; region + timespan filters, search.
 - **Match detail** — score hero, per-map breakdown with agent picks, map veto,
-  head-to-head, stream/VOD links, and a discussion thread.
+  head-to-head, stream/VOD links, and a discussion thread. Tap a played map for
+  the full player scoreboard (agent portraits and a map-splash header appear once
+  the assets bucket is set).
 
 ## Architecture
 

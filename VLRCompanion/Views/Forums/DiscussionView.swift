@@ -43,6 +43,17 @@ struct DiscussionView: View {
     @State private var sending = false
     @State private var actionError: String?
     @State private var showSignIn = false
+    @State private var guidelines: GuidelinesMode?
+    /// First-post terms gate (App Store UGC requirement). Once accepted on this
+    /// install, posting is direct; the guidelines stay reachable from the link.
+    @AppStorage("acceptedCommunityGuidelines") private var acceptedGuidelines = false
+
+    /// Why the guidelines sheet is up: a first-post gate (agree → send) or just
+    /// reading them from the link.
+    private enum GuidelinesMode: Identifiable {
+        case gate, read
+        var id: Int { self == .gate ? 0 : 1 }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -59,6 +70,16 @@ struct DiscussionView: View {
             }
         }
         .sheet(isPresented: $showSignIn) { SignInView() }
+        .sheet(item: $guidelines) { mode in
+            if mode == .gate {
+                CommunityGuidelinesView {
+                    acceptedGuidelines = true
+                    Task { await send() }
+                }
+            } else {
+                CommunityGuidelinesView(onAgree: nil)
+            }
+        }
         .task(id: account.authToken) { await load() }
     }
 
@@ -128,11 +149,14 @@ struct DiscussionView: View {
                         .textFieldStyle(.plain)
                         .padding(10)
                         .background(Theme.elevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    Button(action: { Task { await send() } }) {
+                    Button(action: attemptSend) {
                         Image(systemName: "arrow.up.circle.fill").font(.title2)
                     }
                     .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || sending)
                 }
+                Button("Community guidelines") { guidelines = .read }
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             .padding(12)
             .cardBackground()
@@ -169,6 +193,16 @@ struct DiscussionView: View {
                                                     before: cursor, token: account.authToken) {
             posts += page.posts
             nextCursor = page.nextCursor
+        }
+    }
+
+    /// Route the send button through the first-post terms gate.
+    private func attemptSend() {
+        guard !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        if acceptedGuidelines {
+            Task { await send() }
+        } else {
+            guidelines = .gate
         }
     }
 

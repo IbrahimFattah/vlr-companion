@@ -52,6 +52,7 @@ struct EventDetailView: View {
 
     @Environment(\.dataService) private var dataService
     @State private var matches: Loadable<[Match]> = .idle
+    @State private var visible = Paging.listPageSize
 
     var body: some View {
         ScrollView {
@@ -69,7 +70,8 @@ struct EventDetailView: View {
                                        title: "Matches TBA",
                                        message: "The schedule for this event hasn't been posted yet.")
                     } else {
-                        ForEach(groupedByStage(all), id: \.stage) { group in
+                        let ordered = orderedMatches(all)
+                        ForEach(groupedByStage(Array(ordered.prefix(visible))), id: \.stage) { group in
                             SectionHeader(title: group.stage)
                                 .padding(.top, 8)
                             ForEach(group.matches) { match in
@@ -77,15 +79,21 @@ struct EventDetailView: View {
                                     .buttonStyle(.plain)
                             }
                         }
+                        LoadMoreFooter(visible: visible, total: ordered.count) {
+                            visible = Paging.next(visible, total: ordered.count, step: Paging.listPageSize)
+                        }
                     }
                 }
+
+                DiscussionView(scope: "event", ref: event.id)
+                    .padding(.top, 8)
             }
             .padding(16)
         }
         .background(Theme.background)
         .navigationTitle(event.name)
         .navigationBarTitleDisplayMode(.inline)
-        .refreshable { await load(force: true) }
+        .refreshable { visible = Paging.listPageSize; await load(force: true) }
         .task { await load() }
     }
 
@@ -115,12 +123,16 @@ struct EventDetailView: View {
         let matches: [Match]
     }
 
-    /// Stage sections in order of most recent activity (live first).
-    private func groupedByStage(_ all: [Match]) -> [StageGroup] {
-        let ordered = all.sorted { lhs, rhs in
+    /// Live first, then most recent — the order rows page in.
+    private func orderedMatches(_ all: [Match]) -> [Match] {
+        all.sorted { lhs, rhs in
             if (lhs.status == .live) != (rhs.status == .live) { return lhs.status == .live }
             return lhs.time > rhs.time
         }
+    }
+
+    /// Group already-ordered matches into stage sections, preserving order.
+    private func groupedByStage(_ ordered: [Match]) -> [StageGroup] {
         var groups: [StageGroup] = []
         var indexByStage: [String: Int] = [:]
         for match in ordered {

@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var showSignIn = false
     @State private var showProfileEdit = false
     @State private var showDeleteConfirm = false
+    @State private var showGuidelines = false
     @AppStorage(NotificationManager.Key.live) private var alertLive = true
     @AppStorage(NotificationManager.Key.startingSoon) private var alertStartingSoon = true
     @AppStorage(NotificationManager.Key.finished) private var alertFinished = false
@@ -116,6 +117,7 @@ struct SettingsView: View {
 
                 Section("About") {
                     LabeledContent("Version", value: "1.0")
+                    Button("Community guidelines") { showGuidelines = true }
                     Link("VLR.gg", destination: URL(string: "https://www.vlr.gg")!)
                 }
             }
@@ -131,6 +133,7 @@ struct SettingsView: View {
             .sheet(isPresented: $showProfileEdit) {
                 if let account = account.account { ProfileEditView(account: account) }
             }
+            .sheet(isPresented: $showGuidelines) { CommunityGuidelinesView(onAgree: nil) }
             .confirmationDialog("Delete account?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
                 Button("Delete account", role: .destructive) {
                     Task { try? await account.deleteAccount() }

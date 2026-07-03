@@ -98,10 +98,33 @@ struct AgentChip: View {
     let name: String
 
     var body: some View {
-        Text(name)
-            .font(.caption2.weight(.medium))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(Theme.elevated, in: Capsule())
+        HStack(spacing: 5) {
+            AgentPortrait(agent: name, size: 16)
+            Text(name)
+                .font(.caption2.weight(.medium))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Theme.elevated, in: Capsule())
+    }
+}
+
+/// Agent portrait from the assets bucket. Renders nothing (zero size) when no
+/// bucket is configured, so callers can place it unconditionally and fall back
+/// to the agent's name label.
+struct AgentPortrait: View {
+    let agent: String
+    var size: CGFloat = 22
+
+    var body: some View {
+        if let url = AgentArt.imageURL(for: agent) {
+            AsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Theme.elevated
+            }
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+        }
     }
 }

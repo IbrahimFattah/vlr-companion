@@ -29,18 +29,22 @@ Shipped: tap a map card → `MapScoreboardView` sheet with per-team tables
 the stat tail, agents under player names. Works on live data (real API
 scoreboards) and sample data (seeded lines).
 
-Later polish (decided):
-- **Agent portrait next to the player name** (left or right of the name,
-  like vlr.gg) instead of the text label under it — icons served from the
-  assets bucket (`{bucket}/agents/{agent}.png`), rendered in
-  `MapScoreboardView.row` and reusable in `AgentChip`.
-- **Actual map picture as the scoreboard/map-card background** — full-bleed
-  splash art from `{bucket}/maps/{map}.jpg` behind a dark scrim (keep text
-  contrast), replacing the duotone gradient once the bucket is populated.
-  Hooks already exist (`MapArt.imageURL`); this is about switching from
-  banner-strip overlay to full card/sheet-header background.
+Later polish:
+- **Agent portrait next to the player name** — ✅ built (bucket-gated).
+  `AgentPortrait` renders `{bucket}/agents/{agent}.png` in `MapScoreboardView.row`
+  (replacing the under-name text label when a portrait exists) and inside
+  `AgentChip`. `AgentArt.imageURL` folds the agent name to a slug ("KAY/O" →
+  "kayo"); with no bucket set the name label stays, so nothing regresses.
+- **Actual map picture as the scoreboard header background** — ✅ built
+  (bucket-gated). The `MapScoreboardView` header is now a full-bleed splash
+  (`MapArt.imageURL`, `{bucket}/maps/{map}.jpg`) behind a dark scrim for text
+  contrast; the duotone gradient is the built-in look when no bucket is set.
+  (Map *cards* already overlaid splash art; this extends it to the sheet header.)
 - All/Attack/Defend side splits — the scraper currently exposes only
   aggregates, so this needs an upstream (vlrggapi) change first.
+
+Both bucket-gated items above render their built-in gradient/text look until the
+assets bucket is populated (upload `agents/` + `maps/` and set the bucket URL).
 
 Original spec for reference:
 
@@ -142,8 +146,8 @@ Shipped: every map has a signature duotone banner (`MapArt.colors`) on map
 cards and the scoreboard header — works offline, no licensing questions.
 When the assets bucket is configured, cards automatically overlay real
 splash art from `{bucket}/maps/{map}.jpg` (`MapArt.imageURL`).
-Remaining nice-to-have: agent icons in `AgentChip` (host in the bucket too:
-`{bucket}/agents/{agent}.png`).
+Agent icons in `AgentChip` / scoreboard rows — ✅ built (bucket-gated, see #2);
+host them at `{bucket}/agents/{agent}.png`.
 
 ## 7. Forums / discussion — ✅ built (match threads); event/general reuse ready
 
@@ -161,28 +165,33 @@ tab** hosts the profile header + the general board (`scope:"general"`); Events
 were folded into Matches to keep 5 tabs. Verified in Simulator (post, reply,
 upvote, nested thread) against a local `api-server`.
 
-Remaining: drop `DiscussionView(scope:"event",…)` into `EventDetailView`; show a
-first-post terms gate + moderator contact for App Store review; wire real auth
-(#3).
+Event threads — ✅ built: `DiscussionView(scope:"event", ref: event.id)` is in
+`EventDetailView` (below the match schedule). Terms gate — ✅ built:
+`CommunityGuidelinesView` is a first-post agree gate (rules + moderator contact
+`moderation@vlrcompanion.app` + report/block explainer), also reachable read-only
+from every composer and Settings → About; acceptance is remembered per install
+(`acceptedCommunityGuidelines`).
 
-## 8. Incremental match loading (perf) — later
+Remaining: wire real auth (#3) and swap the placeholder moderation contact for a
+real inbox before submission.
 
-Right now each match list (`MatchesView`, Home sections) fetches and renders the
-**whole** result set every load — the live-data feeds are large (50+ results,
-30+ upcoming). It should show a first page and load the rest as the user scrolls.
+## 8. Incremental match loading (perf) — ✅ DONE (client-side paging)
 
-- Data layer: add paging to `VLRDataService.matches(_:)` — page/offset or a
-  cursor — with a `MatchQuery` limit. vlrggapi returns the full segment list per
-  query, so the first cut can page **client-side** (slice the cached array) to
-  get instant UI wins with no API change; a real server-side limit is a later
-  upstream ask.
-- UI: render the first ~15, append on scroll via `.onAppear` of the last row
-  (or `List` + `.task`), with a footer skeleton while the next page loads.
-  Keep `.refreshable` resetting to page 1.
-- Applies to Matches (all three segments), Home "recent results", event match
-  lists, and team match history.
-- Caching: `CachingDataService` still stores the full payload; paging is a
-  presentation concern over the cached array, so offline still works.
+Large feeds (50+ results, 30+ upcoming) now render a first page and append the
+rest as the user scrolls, instead of building every row up front.
+
+- Reusable `LoadMoreFooter` (a spinner that calls `grow` on `.onAppear`) + a
+  `Paging` helper (`matchPageSize` 20 / `listPageSize` 15, `next(…)` clamp). Each
+  list keeps a `visible` window and renders `array.prefix(visible)`; the footer
+  grows it. `.refreshable` and segment/team changes reset to page 1.
+- Wired into: Matches (all four segments — day/stage grouping pages the flat
+  ordered slice then groups it), Home "recent results", `EventDetailView` match
+  list, and My Team results.
+- Purely client-side and presentational: `CachingDataService` still stores the
+  full payload, so offline still works and there's no API change. A real
+  server-side limit stays a later upstream ask.
+- DEBUG hook added for testing: `-vlrMatchesSegment live|upcoming|results|events`
+  picks the initial Matches segment.
 
 ---
 
@@ -191,9 +200,9 @@ Right now each match list (`MatchesView`, Home sections) fetches and renders the
 | Phase | Items | Why |
 |---|---|---|
 | 0 | #0 API integration | ✅ done (client side) |
-| A | #1 logos, #6 map art, #2 map scoreboard | ✅ done — remaining: populate assets bucket |
+| A | #1 logos, #6 map art, #2 map scoreboard | ✅ done (incl. agent portraits + splash header) — remaining: populate assets bucket |
 | B | #5 push | ✅ built (app + `push-server/`) — remaining: Apple account + deploy |
 | C | #3 accounts | ✅ built (`api-server/` + app) — remaining: Sign in with Apple |
-| D | #7 forums | ✅ built (match threads) — remaining: event/general + terms gate |
+| D | #7 forums | ✅ built (match + event + general threads, terms gate) — remaining: real auth |
 | — | #4 points | ⏸ deferred (user choice) — revisit after C+D |
-| — | #8 incremental match loading | Perf polish, any time |
+| — | #8 incremental match loading | ✅ done (client-side paging) |

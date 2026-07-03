@@ -14,6 +14,8 @@ struct HomeView: View {
     @State private var knownLiveIDs: Set<String>?
     @State private var showSettings = false
     @State private var path = NavigationPath()
+    /// Recent-results rows shown; grows as the footer scrolls into view.
+    @State private var resultsVisible = 6
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -114,9 +116,12 @@ struct HomeView: View {
             case .failed:
                 EmptyView()
             case .loaded(let matches):
-                ForEach(matches.prefix(5)) { match in
+                ForEach(matches.prefix(resultsVisible)) { match in
                     NavigationLink(value: match) { MatchCard(match: match) }
                         .buttonStyle(.plain)
+                }
+                LoadMoreFooter(visible: resultsVisible, total: matches.count) {
+                    resultsVisible = Paging.next(resultsVisible, total: matches.count, step: Paging.listPageSize)
                 }
             }
         }

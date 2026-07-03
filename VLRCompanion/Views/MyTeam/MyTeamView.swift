@@ -10,6 +10,8 @@ struct MyTeamView: View {
     /// A secondary team being previewed; nil means the favorite.
     @State private var displayedTeam: Team?
     @State private var showTeamPicker = false
+    /// Recent-results rows shown; grows on scroll, resets per team.
+    @State private var resultsVisible = 8
 
     private var team: Team? {
         displayedTeam ?? favorites.favoriteTeam
@@ -68,8 +70,8 @@ struct MyTeamView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .refreshable { await load(team, force: true) }
-        .task(id: team.id) { await load(team) }
+        .refreshable { resultsVisible = 8; await load(team, force: true) }
+        .task(id: team.id) { resultsVisible = 8; await load(team) }
     }
 
     // MARK: - Header
@@ -162,11 +164,14 @@ struct MyTeamView: View {
         if !profile.results.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Recent results")
-                ForEach(profile.results.prefix(8)) { match in
+                ForEach(profile.results.prefix(resultsVisible)) { match in
                     NavigationLink(value: match) {
                         ResultRow(match: match, teamID: profile.team.id)
                     }
                     .buttonStyle(.plain)
+                }
+                LoadMoreFooter(visible: resultsVisible, total: profile.results.count) {
+                    resultsVisible = Paging.next(resultsVisible, total: profile.results.count, step: Paging.listPageSize)
                 }
             }
         }
