@@ -25,6 +25,35 @@ xcodebuild -project VLRCompanion.xcodeproj -scheme VLRCompanion \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
+## Backend services (local dev)
+
+Three optional self-hosted services live in this repo. The app runs fully
+without them (sample data, no accounts); each adds a feature when its URL is set
+in **Settings → Data source**.
+
+| Service | Dir | Port | Powers |
+|---|---|---|---|
+| vlrggapi | (external clone) | 3001 | live scores/stats (`VLRAPIService`) |
+| Accounts + forums | `api-server/` | 8080 | sign-in, profile, discussion |
+| Push worker | `push-server/` | 8000 | background match alerts (needs Apple acct) |
+
+### Start the accounts + forums API
+
+```sh
+cd api-server
+python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt
+DB_PATH=./data/api.db ALLOW_DEV_AUTH=1 \
+  ./.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080
+# health check:
+curl http://127.0.0.1:8080/health
+```
+
+Then in the app: **Settings → Data source → API server URL** =
+`http://127.0.0.1:8080`, and **Settings → Account → Sign in** (username login;
+Sign in with Apple arrives with `APPLE_CLIENT_ID`). Docker + full config +
+production notes: **[api-server/README.md](api-server/README.md)**. The other
+two services are covered in `SELF_HOSTING.md` (Parts 1–3) and their own READMEs.
+
 ## App structure
 
 - **Onboarding** — welcome → pick one favorite team (searchable, grouped by region)
@@ -33,16 +62,19 @@ xcodebuild -project VLRCompanion.xcodeproj -scheme VLRCompanion \
 - **Home** — live ticker (auto-refreshes every 30 s), today's matches, recent
   results, headlines. A haptic + local notification fires when a followed team's
   match flips to live.
-- **Matches** — Live / Upcoming / Results segments, day-grouped, countdowns.
+- **Matches** — Live / Upcoming / Results / **Events** segments. The first three
+  are day-grouped match lists with countdowns; Events lists Ongoing / Upcoming /
+  Completed tournaments → stage-grouped matches.
 - **My Team** — favorite-team tab tinted with the team's brand color: next-match
   hero, upcoming, results with W/L chips, roster grid, standing. Secondary teams
   are one tap away via the chip strip.
-- **Events** — Ongoing / Upcoming / Completed tournaments → stage-grouped match
-  lists.
+- **Community** — your profile (avatar + username) over the general discussion
+  board; needs the API server + sign-in. Match/event threads live in their
+  detail screens.
 - **Stats** — Team rankings (with movement indicators) and player stats
   (rating/ACS/K/D/KAST/ADR) behind one tab; region + timespan filters, search.
 - **Match detail** — score hero, per-map breakdown with agent picks, map veto,
-  head-to-head, stream/VOD links.
+  head-to-head, stream/VOD links, and a discussion thread.
 
 ## Architecture
 
