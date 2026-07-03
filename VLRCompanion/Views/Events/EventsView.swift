@@ -1,71 +1,7 @@
 import SwiftUI
 
-struct EventsView: View {
-    @Environment(\.dataService) private var dataService
-    @State private var status: EventStatus = .ongoing
-    @State private var store: [EventStatus: Loadable<[VLREvent]>] = [:]
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    content
-                }
-                .padding(16)
-            }
-            .background(Theme.background)
-            .navigationTitle("Events")
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Picker("Event filter", selection: $status) {
-                    ForEach(EventStatus.allCases) { status in
-                        Text(status.displayName).tag(status)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.bar)
-            }
-            .navigationDestination(for: VLREvent.self) { EventDetailView(event: $0) }
-            .navigationDestination(for: Match.self) { MatchDetailView(match: $0) }
-            .refreshable { await load(status, force: true) }
-            .task(id: status) { await load(status) }
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch store[status] ?? .idle {
-        case .idle, .loading:
-            SkeletonColumn(count: 5)
-        case .failed(let message):
-            ErrorRetryView(message: message) { Task { await load(status, force: true) } }
-        case .loaded(let events):
-            if events.isEmpty {
-                EmptyStateView(systemImage: "trophy",
-                               title: "No \(status.displayName.lowercased()) events",
-                               message: "Pull to refresh, or check another filter.")
-            } else {
-                ForEach(events) { event in
-                    NavigationLink(value: event) { EventCard(event: event) }
-                        .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func load(_ status: EventStatus, force: Bool = false) async {
-        if !force, store[status]?.value != nil { return }
-        if store[status]?.value == nil { store[status] = .loading }
-        do {
-            store[status] = .loaded(try await dataService.events(status))
-        } catch {
-            if store[status]?.value == nil {
-                store[status] = .failed(error.localizedDescription)
-            }
-        }
-    }
-}
+// Events now live as a segment inside `MatchesView`. This file keeps the
+// event card + detail screen used from there.
 
 struct EventCard: View {
     let event: VLREvent

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case home, matches, myTeam, events, stats
+    case home, matches, myTeam, community, stats
 }
 
 struct MainTabView: View {
@@ -14,9 +14,9 @@ struct MainTabView: View {
         if let raw = UserDefaults.standard.string(forKey: "vlrInitialTab") {
             let tab: AppTab
             switch raw {
-            case "matches": tab = .matches
+            case "matches", "events": tab = .matches   // events folded into Matches
             case "myteam": tab = .myTeam
-            case "events": tab = .events
+            case "community": tab = .community
             case "stats": tab = .stats
             default: tab = .home
             }
@@ -39,9 +39,9 @@ struct MainTabView: View {
                 .tabItem { Label("My Team", systemImage: "shield.fill") }
                 .tag(AppTab.myTeam)
 
-            EventsView()
-                .tabItem { Label("Events", systemImage: "trophy.fill") }
-                .tag(AppTab.events)
+            CommunityView()
+                .tabItem { Label("Community", systemImage: "bubble.left.and.bubble.right.fill") }
+                .tag(AppTab.community)
 
             StatsView()
                 .tabItem { Label("Stats", systemImage: "chart.bar.fill") }
