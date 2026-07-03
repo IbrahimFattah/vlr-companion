@@ -156,12 +156,14 @@ soft-delete, admin moderation (`X-Admin-Token`), per-user post rate limit.
 
 **App:** `DiscussionView` (inline in `MatchDetailView` + standalone
 `DiscussionScreen`), `PostRow` with avatar/upvote/reply and a report/block/
-delete menu, composer that prompts sign-in, "Load more" paging. Verified in
-Simulator (post, reply, upvote, nested thread) against a local `api-server`.
+delete menu, composer that prompts sign-in, "Load more" paging. A **Community
+tab** hosts the profile header + the general board (`scope:"general"`); Events
+were folded into Matches to keep 5 tabs. Verified in Simulator (post, reply,
+upvote, nested thread) against a local `api-server`.
 
-Remaining: drop `DiscussionView(scope:"event",…)` into `EventDetailView`;
-optional general-board tab/section; show a first-post terms gate + moderator
-contact for App Store review; wire real auth (#3).
+Remaining: drop `DiscussionView(scope:"event",…)` into `EventDetailView`; show a
+first-post terms gate + moderator contact for App Store review; wire real auth
+(#3).
 
 ## 8. Incremental match loading (perf) — later
 
