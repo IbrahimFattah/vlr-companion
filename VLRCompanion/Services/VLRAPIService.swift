@@ -408,21 +408,6 @@ final class VLRAPIService: VLRDataService {
 
         let team1 = makeTeam(t1DTO)
         let team2 = makeTeam(t2DTO)
-
-        let match = Match(id: id,
-                          eventName: eventName,
-                          stage: dto.event?.series ?? "",
-                          team1: team1,
-                          team2: team2,
-                          score1: t1DTO.score?.value,
-                          score2: t2DTO.score?.value,
-                          status: status,
-                          time: .now,
-                          format: format,
-                          currentMap: status == .live ? dto.maps?.last?.mapName : nil,
-                          streamURL: normalizedURL(dto.streams?.elements.first?.url),
-                          vodURL: normalizedURL(dto.vods?.elements.first?.url))
-
         let tags = (team1.tag, team2.tag)
 
         let vetos = (dto.mapVetos ?? "")
@@ -443,10 +428,7 @@ final class VLRAPIService: VLRDataService {
         }
 
         let maps: [MapResult] = (dto.maps ?? []).enumerated().map { index, mapDTO in
-            let isLast = index == mapCount - 1
-            let mapStatus: MapStatus = status == .completed ? .completed
-                : status == .live ? (isLast ? .live : .completed)
-                : .upcoming
+            let mapStatus = mapStatus(mapDTO, matchStatus: status)
             let rawPick = mapDTO.pickedBy?.trimmingCharacters(in: .whitespaces) ?? ""
             let pickedBy: String?
             if !rawPick.isEmpty, rawPick.uppercased() != "PICK", rawPick.uppercased() != "DECIDER" {
